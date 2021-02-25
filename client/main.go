@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"time"
+        "github.com/eyedeekay/sam3"
 )
 
 func main() {
@@ -13,12 +14,26 @@ func main() {
 	buffersize := flag.Int("buffer", 4096, "Buffer size")
 	reportinterval := flag.Duration("report", 5*time.Second, "Report interval")
 	send := flag.Bool("send", true, "True for send, false for receive")
+        i2p := flag.Bool("i2p", false, "Use I2P address for speedtest")
 	flag.Parse()
 
-	conn, err := net.Dial("tcp", *connect)
-	if err != nil {
+        var conn net.Conn
+        var err error
+        if *i2p {
+            sess, err := sam.I2PStreamSession("speedtest-client", "127.0.0.1:7656", "speedtest-client")
+            if err != nil {
 		log.Fatalf("Could not connect: %s", err)
-	}
+	    }
+            conn, err = sess.DialI2P("I2P", *connect)
+            if err != nil {
+		log.Fatalf("Could not connect: %s", err)
+	    }
+        } else {
+	    conn, err = net.Dial("tcp", *connect)
+	    if err != nil {
+		log.Fatalf("Could not connect: %s", err)
+	    }
+        }
 
 	reportCh := make(chan speedtest.BytesPerTime)
 	statsCh := make(chan speedtest.BytesPerTime)
